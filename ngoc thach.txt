@@ -1,0 +1,193 @@
+﻿CREATE DATABASE QLHocSinh;
+GO
+
+USE QLHocSinh;
+GO
+
+CREATE TABLE HocSinh (
+    MaHS INT PRIMARY KEY IDENTITY(1,1),
+    HoTen NVARCHAR(100),
+    NgaySinh DATE,
+    GioiTinh NVARCHAR(10),
+    Lop NVARCHAR(10)
+);
+Imports System.Data.OleDb
+
+Public Class frmQLHocSinh
+    ' Kết nối cơ sở dữ liệu
+    Dim con As New OleDbConnection("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=QLHocSinh.accdb")
+    Dim cmd As OleDbCommand
+    Dim da As OleDbDataAdapter
+    Dim dt As DataTable
+
+    ' Lớp học sinh
+    Private Class HocSinh
+        Public Property MaHS As String
+        Public Property HoTen As String
+        Public Property NgaySinh As Date
+        Public Property GioiTinh As String
+        Public Property Lop As String
+        Public Property DiaChi As String
+
+        Public Sub New(ma As String, ten As String, ns As Date, gt As String, lop As String, dc As String)
+            MaHS = ma
+            HoTen = ten
+            NgaySinh = ns
+            GioiTinh = gt
+            Lop = lop
+            DiaChi = dc
+        End Sub
+    End Class
+
+    ' Load dữ liệu lên DataGridView
+    Private Sub LoadData()
+        Try
+            dt = New DataTable()
+            da = New OleDbDataAdapter("SELECT * FROM HocSinh", con)
+            da.Fill(dt)
+            dgvHocSinh.DataSource = dt
+        Catch ex As Exception
+            MessageBox.Show("Lỗi tải dữ liệu: " & ex.Message)
+        End Try
+    End Sub
+
+    ' Form Load
+    Private Sub frmQLHocSinh_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        cboGioiTinh.Items.Add("Nam")
+        cboGioiTinh.Items.Add("Nữ")
+        cboGioiTinh.SelectedIndex = 0
+        LoadData()
+    End Sub
+
+    ' Thêm học sinh
+    Private Sub btnThem_Click(sender As Object, e As EventArgs) Handles btnThem.Click
+        Try
+            If con.State = ConnectionState.Closed Then con.Open()
+            Dim sql As String = "INSERT INTO HocSinh (MaHS, HoTen, NgaySinh, GioiTinh, Lop, DiaChi) VALUES (?, ?, ?, ?, ?, ?)"
+            cmd = New OleDbCommand(sql, con)
+            cmd.Parameters.AddWithValue("?", txtMaHS.Text)
+            cmd.Parameters.AddWithValue("?", txtHoTen.Text)
+            cmd.Parameters.AddWithValue("?", dtpNgaySinh.Value)
+            cmd.Parameters.AddWithValue("?", cboGioiTinh.Text)
+            cmd.Parameters.AddWithValue("?", txtLop.Text)
+            cmd.Parameters.AddWithValue("?", txtDiaChi.Text)
+            cmd.ExecuteNonQuery()
+            con.Close()
+            LoadData()
+            MessageBox.Show("Đã thêm học sinh thành công!")
+        Catch ex As Exception
+            MessageBox.Show("Lỗi thêm học sinh: " & ex.Message)
+        End Try
+    End Sub
+
+    ' Sửa thông tin học sinh
+    Private Sub btnSua_Click(sender As Object, e As EventArgs) Handles btnSua.Click
+        Try
+            If con.State = ConnectionState.Closed Then con.Open()
+            Dim sql As String = "UPDATE HocSinh SET HoTen=?, NgaySinh=?, GioiTinh=?, Lop=?, DiaChi=? WHERE MaHS=?"
+            cmd = New OleDbCommand(sql, con)
+            cmd.Parameters.AddWithValue("?", txtHoTen.Text)
+            cmd.Parameters.AddWithValue("?", dtpNgaySinh.Value)
+            cmd.Parameters.AddWithValue("?", cboGioiTinh.Text)
+            cmd.Parameters.AddWithValue("?", txtLop.Text)
+            cmd.Parameters.AddWithValue("?", txtDiaChi.Text)
+            cmd.Parameters.AddWithValue("?", txtMaHS.Text)
+            cmd.ExecuteNonQuery()
+            con.Close()
+            LoadData()
+            MessageBox.Show("Đã cập nhật học sinh!")
+        Catch ex As Exception
+            MessageBox.Show("Lỗi sửa học sinh: " & ex.Message)
+        End Try
+    End Sub
+
+    ' Xóa học sinh
+    Private Sub btnXoa_Click(sender As Object, e As EventArgs) Handles btnXoa.Click
+        If MessageBox.Show("Bạn có chắc muốn xóa học sinh này?", "Xác nhận", MessageBoxButtons.YesNo) = DialogResult.Yes Then
+            Try
+                If con.State = ConnectionState.Closed Then con.Open()
+                Dim sql As String = "DELETE FROM HocSinh WHERE MaHS=?"
+                cmd = New OleDbCommand(sql, con)
+                cmd.Parameters.AddWithValue("?", txtMaHS.Text)
+                cmd.ExecuteNonQuery()
+                con.Close()
+                LoadData()
+                MessageBox.Show("Đã xóa học sinh!")
+            Catch ex As Exception
+                MessageBox.Show("Lỗi xóa học sinh: " & ex.Message)
+            End Try
+        End If
+    End Sub
+
+    ' Tìm kiếm học sinh theo tên
+    Private Sub btnTim_Click(sender As Object, e As EventArgs) Handles btnTim.Click
+        Try
+            dt = New DataTable()
+            da = New OleDbDataAdapter("SELECT * FROM HocSinh WHERE HoTen LIKE '%" & txtTim.Text & "%'", con)
+            da.Fill(dt)
+            dgvHocSinh.DataSource = dt
+        Catch ex As Exception
+            MessageBox.Show("Lỗi tìm kiếm: " & ex.Message)
+        End Try
+    End Sub
+
+    ' Thoát chương trình
+    Private Sub btnThoat_Click(sender As Object, e As EventArgs) Handles btnThoat.Click
+        Application.Exit()
+    End Sub
+
+    ' Khi click vào DataGridView
+    Private Sub dgvHocSinh_CellClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvHocSinh.CellClick
+        Dim i As Integer = dgvHocSinh.CurrentRow.Index
+        txtMaHS.Text = dgvHocSinh.Item(0, i).Value.ToString()
+        txtHoTen.Text = dgvHocSinh.Item(1, i).Value.ToString()
+        dtpNgaySinh.Value = Convert.ToDateTime(dgvHocSinh.Item(2, i).Value)
+        cboGioiTinh.Text = dgvHocSinh.Item(3, i).Value.ToString()
+        txtLop.Text = dgvHocSinh.Item(4, i).Value.ToString()
+        txtDiaChi.Text = dgvHocSinh.Item(5, i).Value.ToString()
+    End Sub
+
+    ' Thêm 5 học sinh mẫu
+    Private Sub btnThemMau_Click(sender As Object, e As EventArgs) Handles btnThemMau.Click
+        ThemHocSinhMau()
+    End Sub
+
+    ' Hàm thêm học sinh mẫu
+    Private Sub ThemHocSinhMau()
+        Try
+            If con.State = ConnectionState.Closed Then con.Open()
+
+            Dim danhSachHS As New List(Of HocSinh) From {
+                New HocSinh("HS001", "Nguyễn Văn A", #2008-05-12#, "Nam", "10A1", "Hà Nội"),
+                New HocSinh("HS002", "Trần Thị B", #2007-09-23#, "Nữ", "10A2", "Hải Phòng"),
+                New HocSinh("HS003", "Lê Văn C", #2008-01-10#, "Nam", "10A1", "Đà Nẵng"),
+                New HocSinh("HS004", "Phạm Thị D", #2007-12-30#, "Nữ", "10A3", "Nghệ An"),
+                New HocSinh("HS005", "Hoàng Văn E", #2008-07-17#, "Nam", "10A1", "Hồ Chí Minh")
+            }
+
+            For Each hs As HocSinh In danhSachHS
+                ' Kiểm tra trùng mã học sinh trước khi thêm
+                Dim checkCmd As New OleDbCommand("SELECT COUNT(*) FROM HocSinh WHERE MaHS = ?", con)
+                checkCmd.Parameters.AddWithValue("?", hs.MaHS)
+                Dim count As Integer = Convert.ToInt32(checkCmd.ExecuteScalar())
+                If count = 0 Then
+                    Dim sql As String = "INSERT INTO HocSinh (MaHS, HoTen, NgaySinh, GioiTinh, Lop, DiaChi) VALUES (?, ?, ?, ?, ?, ?)"
+                    cmd = New OleDbCommand(sql, con)
+                    cmd.Parameters.AddWithValue("?", hs.MaHS)
+                    cmd.Parameters.AddWithValue("?", hs.HoTen)
+                    cmd.Parameters.AddWithValue("?", hs.NgaySinh)
+                    cmd.Parameters.AddWithValue("?", hs.GioiTinh)
+                    cmd.Parameters.AddWithValue("?", hs.Lop)
+                    cmd.Parameters.AddWithValue("?", hs.DiaChi)
+                    cmd.ExecuteNonQuery()
+                End If
+            Next
+
+            con.Close()
+            LoadData()
+            MessageBox.Show("Đã thêm 5 học sinh mẫu!")
+        Catch ex As Exception
+            MessageBox.Show("Lỗi khi thêm học sinh mẫu: " & ex.Message)
+        End Try
+    End Sub
+End Class
